@@ -36,12 +36,16 @@ module.exports = {
     }
   },
 
+  /*
+   * CREATE USER 'soidc'@'localhost' IDENTIFIED WITH mysql_native_password BY 'soidc';
+   * grant all on oidc_provider.* to 'soidc'@'localhost';
+   */
   staging: {
     client: 'mysql',
     connection: {
       database: databaseNamePrefix + 'oidc_provider',
-      user:     'username',
-      password: 'password'
+      user:     'soidc',
+      password: 'soidc'
     },
     pool: {
       min: 2,
@@ -57,8 +61,8 @@ module.exports = {
     client: 'mysql',
     connection: {
       database: databaseNamePrefix + 'oidc_provider',
-      user:     'username',
-      password: 'password'
+      user:     'soidc',
+      password: 'soidc'
     },
     pool: {
       min: 2,
