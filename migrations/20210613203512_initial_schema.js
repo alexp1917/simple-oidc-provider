@@ -22,6 +22,7 @@ exports.up = async knex => {
   });
 
   await knex(p('scope')).insert({ name: 'prometheus' });
+  await knex(p('scope')).insert({ name: 'grafana' });
 
   await knex.schema.createTable(p('resource_owner'), t => {
     t.increments();
@@ -48,6 +49,11 @@ exports.up = async knex => {
   await knex(p('ro_scope')).insert({
     resource_owner_id: knex(p('resource_owner')).select('id').where({ username: 'username' }).first(),
     scope_id: knex(p('scope')).select('id').where({ name: 'prometheus' }).first(),
+  });
+
+  await knex(p('ro_scope')).insert({
+    resource_owner_id: knex(p('resource_owner')).select('id').where({ username: 'username' }).first(),
+    scope_id: knex(p('scope')).select('id').where({ name: 'grafana' }).first(),
   });
 };
 

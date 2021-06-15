@@ -3,7 +3,7 @@ var express = require('express');
 require('express-async-errors');
 var exphbs  = require('express-handlebars');
 var createError = require('http-errors');
-var logger = require('morgan');
+var morgan = require('morgan');
 
 var path = require('path');
 var status = 'error';
@@ -15,7 +15,7 @@ var expressHandlebarsConfig = {
   layoutsDir,
 };
 
-function makeApp(controllers, config) {
+function makeApp(logger, controllers, config) {
   var {
     baseUrl,
   } = config;
@@ -27,7 +27,7 @@ function makeApp(controllers, config) {
   var app = express();
 
   app.locals.title = 'Simple OIDC Provider';
-  app.use(logger('dev'));
+  app.use(morgan('dev'));
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
@@ -40,7 +40,19 @@ function makeApp(controllers, config) {
 
   app.get(baseUrl + '/', (r, s, n) => s.render('index'));
   app.get(baseUrl + '/it-works', (r, s, n) => s.send('<h1>It Works!</h1>'));
+  app.get(baseUrl + '/authorize', (r, s, n) => oAuth2Controller.authorize(r, s, n));
   app.get(baseUrl + '/oauth2', (r, s, n) => oAuth2Controller.get(r, s, n));
+  app.use(baseUrl + '/oauth2/token', (r, s, n) => oAuth2Controller.token(r, s, n));
+
+  app.use((req, res, next) => {
+
+    logger.log('hello from no route');
+    logger.log(req.originalUrl);
+    logger.log(req.method);
+    logger.log(req.query);
+    logger.log(req.body);
+    next();
+  });
 
   app.use(function(req, res, next) {
     next(createError(404));

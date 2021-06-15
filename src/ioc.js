@@ -18,9 +18,12 @@ module.exports.logger = new logging.Logger();
 
 module.exports.db = makeDb();
 
-module.exports.oAuth2Controller = new controllers.OAuth2Controller();
+module.exports.oAuth2Controller = new controllers.OAuth2Controller(
+  module.exports.logger,
+  module.exports.db,
+);
 
-module.exports.app = makeApp(module.exports, config);
+module.exports.app = makeApp(module.exports.logger, module.exports, config);
 
 module.exports.refresh = async function refresh() {
   await makeDb.migrateLatest(module.exports.db);
