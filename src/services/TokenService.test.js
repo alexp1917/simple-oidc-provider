@@ -11,6 +11,30 @@ tap.test('TokenService.test.js', t => {
     t.end();
   });
 
+  var rsaTokenServiceCfg = { mode: 'rsa', rsa: getTestKeyPair(), };
+  var rsaTokenService = new TokenService(new Logger(), rsaTokenServiceCfg);
+  var hmacTokenServiceCfg = { mode: 'hmac', hmac: { secret: 'secret', } };
+  var hmacTokenService = new TokenService(new Logger(), hmacTokenServiceCfg);
+
+  tap.test('TokenService#parse', t => {
+
+    t.end();
+  });
+
+  tap.test('TokenService#stringify', t => {
+    t.end();
+  });
+
+  tap.test('TokenService#verify', t => {
+    t.ok(TokenService.prototype.verify === TokenService.prototype.parse);
+    t.end();
+  });
+
+  tap.test('TokenService#token', t => {
+    t.ok(TokenService.prototype.token === TokenService.prototype.stringify);
+    t.end();
+  });
+
   tap.test('TokenService.validateConfig', t => {
     var goodRsa = {
       mode: 'rsa',
@@ -19,7 +43,9 @@ tap.test('TokenService.test.js', t => {
     var badRsa = { mode: 'rsa', };
     var goodHmac = {
       mode: 'hmac',
-      secret: 'secret',
+      hmac: {
+        secret: 'secret',
+      },
     };
     var badHmac = { mode: 'hmac', };
 
@@ -32,13 +58,16 @@ tap.test('TokenService.test.js', t => {
     t.ok(!TokenService.validateConfig({ mode: () => {}, }));
     t.ok(!TokenService.validateConfig({ mode: 'ecdsa', }));
     t.ok(!TokenService.validateConfig({ mode: 'rsa', rsa: {}, }));
+    t.ok(!TokenService.validateConfig({ mode: 'hmac', hmac: {}, }));
     t.end();
   });
 
   tap.test('TokenService::constructor', t => {
     var ts = new TokenService(new Logger(), {
       mode: 'hmac',
-      secret: 'secret',
+      hmac: {
+        secret: 'secret',
+      },
     });
 
     t.throws(() => new TokenService(new Logger(), false));

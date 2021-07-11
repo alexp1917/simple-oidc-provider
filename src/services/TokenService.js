@@ -1,5 +1,6 @@
 var crypto = require('crypto');
 var util = require('util');
+var jsonwebtoken = require('jsonwebtoken');
 
 function TokenService(logger, config) {
   this.logger = logger;
@@ -13,9 +14,30 @@ function TokenService(logger, config) {
   this.logger.debug('created TokenService', config);
 }
 
+TokenService.prototype.parse = async function(token) {
+};
+
+TokenService.prototype.stringify = async function(token) {
+};
+
+TokenService.prototype.verify = TokenService.prototype.parse;
+
+TokenService.prototype.token = TokenService.prototype.stringify;
+
 var validModes = new Map([
-  ['hmac', true],
-  ['rsa', true],
+  ['hmac', {
+    algorithms: [
+      'HS256',
+      'HS384',
+      'HS512',
+    ],
+  }],
+  ['rsa', {
+    algorithms: [
+      'RS384',
+      'RS512',
+    ],
+  }],
 ]);
 
 var cryptoGenerateKeyPair = util.promisify(crypto.generateKeyPair);
@@ -57,12 +79,20 @@ TokenService.validateConfig = function (config) {
 
     if (!(config.rsa.publicKey && config.rsa.privateKey)) {
       return false;
+    } else {
+      config.secretOrPublicKey = config.rsa.privateKey;
     }
   }
 
   if (config.mode === 'hmac') {
-    if (!(config.secret)) {
+    if (!config.hmac) {
       return false;
+    }
+
+    if (!(config.hmac.secret)) {
+      return false;
+    } else {
+      config.secretOrPublicKey = config.hmac.secret;
     }
   }
 
