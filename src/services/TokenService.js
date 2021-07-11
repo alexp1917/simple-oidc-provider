@@ -2,6 +2,10 @@ var crypto = require('crypto');
 var util = require('util');
 var jsonwebtoken = require('jsonwebtoken');
 
+var cryptoGenerateKeyPair = util.promisify(crypto.generateKeyPair);
+var jwtVerifyPromisified = util.promisify(jsonwebtoken.verify);
+var jwtSignPromisified = util.promisify(jsonwebtoken.sign);
+
 function TokenService(logger, config) {
   this.logger = logger;
   this.config = config;
@@ -35,11 +39,7 @@ TokenService.prototype.parse = async function(token, clientInfo) {
     // ignoreExpiration: false
   };
 
-  return new Promise((r, j) => {
-    jsonwebtoken.verify(token, secretOrPublicKey, options, (e, d) => {
-      return e ? j(e) : r(d);
-    });
-  });
+  return await jwtVerifyPromisified(token, secretOrPublicKey, options);
 };
 
 TokenService.prototype.stringify = async function(payload, clientInfo) {
@@ -85,11 +85,7 @@ TokenService.prototype.stringify = async function(payload, clientInfo) {
     keyid: '1',
   };
 
-  return new Promise((r, j) => {
-    jsonwebtoken.sign(payload, secretOrPublicKey, options, (e, d) => {
-      return e ? j(e) : r(d);
-    });
-  });
+  return await jwtSignPromisified(payload, secretOrPublicKey, options);
 };
 
 TokenService.prototype.verify = TokenService.prototype.parse;
@@ -113,8 +109,6 @@ var validModes = new Map([
     ],
   }],
 ]);
-
-var cryptoGenerateKeyPair = util.promisify(crypto.generateKeyPair);
 
 TokenService.generateKeyPair = async function (modulusLength) {
   return await cryptoGenerateKeyPair('rsa', {
