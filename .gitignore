@@ -1,3 +1,5 @@
+*.sqlite*
+
 ###Node###
 
 # Logs

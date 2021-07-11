@@ -14,10 +14,82 @@ function TokenService(logger, config) {
   this.logger.debug('created TokenService', config);
 }
 
-TokenService.prototype.parse = async function(token) {
+TokenService.prototype.parse = async function(token, clientInfo) {
+  var {
+    mode,
+    secretOrPublicKey,
+  } = this.config;
+
+  var {
+    algorithms,
+  } = validModes.get(mode);
+
+  var options = {
+    algorithms,
+    audience: [clientInfo.clientId],
+    // complete: false,
+    // candidate for tenant?
+    issuer: ['TokenService'],
+    // jwtid: null, (dont have this)
+    // subject: [/* what goes here? */],
+    // ignoreExpiration: false
+  };
+
+  return new Promise((r, j) => {
+    jsonwebtoken.verify(token, secretOrPublicKey, options, (e, d) => {
+      return e ? j(e) : r(d);
+    });
+  });
 };
 
-TokenService.prototype.stringify = async function(token) {
+TokenService.prototype.stringify = async function(payload, clientInfo) {
+  var {
+    mode,
+    secretOrPublicKey,
+  } = this.config;
+
+  var {
+    algorithm,
+  } = validModes.get(mode);
+
+  var specialClaims = {
+    expiresIn: clientInfo.expiresIn,
+    audience: clientInfo.clientId,
+    issuer: 'TokenService',
+  };
+
+  // for (var prop in specialClaims) {
+  //   if (!specialClaims[prop]) {
+  //     delete specialClaims[prop];
+  //   }
+  // }
+
+  if (!TokenService.counter)
+    TokenService.counter = 0;
+
+  // https://github.com/auth0
+  // /node-jsonwebtoken#jwtsignpayload-secretorprivatekey-options-callback
+  var options = {
+    algorithm,
+    ...specialClaims,
+
+    // brick number
+    // goes into payload as 'jti'
+    jwtid: String(TokenService.counter++),
+
+    // subject: '', /* what goes here? */
+    // noTimestamp: false,
+    // header: {},
+    // which key was used (only one is allowed so far)
+    // goes into header as 'kid'
+    keyid: '1',
+  };
+
+  return new Promise((r, j) => {
+    jsonwebtoken.sign(payload, secretOrPublicKey, options, (e, d) => {
+      return e ? j(e) : r(d);
+    });
+  });
 };
 
 TokenService.prototype.verify = TokenService.prototype.parse;
@@ -26,6 +98,7 @@ TokenService.prototype.token = TokenService.prototype.stringify;
 
 var validModes = new Map([
   ['hmac', {
+    algorithm: 'HS512',
     algorithms: [
       'HS256',
       'HS384',
@@ -33,6 +106,7 @@ var validModes = new Map([
     ],
   }],
   ['rsa', {
+    algorithm: 'RS512',
     algorithms: [
       'RS384',
       'RS512',

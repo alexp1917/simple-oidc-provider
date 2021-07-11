@@ -7,6 +7,7 @@ exports.up = async knex => {
     t.string('name').notNullable();
     t.string('client_id').notNullable().unique();
     t.string('client_secret').notNullable();
+    t.bigint('expires_in').unsigned().default(3600);
   });
 
   await knex(p('oauth_client')).insert({

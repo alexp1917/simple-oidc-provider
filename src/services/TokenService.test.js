@@ -6,22 +6,100 @@ var TokenService = require('./TokenService.js')
 var { Logger } = require('../logging');
 
 tap.test('TokenService.test.js', t => {
-  tap.test('TokenService.generateKeyPair', t => {
-    TokenService.generateKeyPair(512);
+  tap.test('TokenService.generateKeyPair', async t => {
+    await TokenService.generateKeyPair(512);
     t.end();
   });
 
-  var rsaTokenServiceCfg = { mode: 'rsa', rsa: getTestKeyPair(), };
-  var rsaTokenService = new TokenService(new Logger(), rsaTokenServiceCfg);
-  var hmacTokenServiceCfg = { mode: 'hmac', hmac: { secret: 'secret', } };
-  var hmacTokenService = new TokenService(new Logger(), hmacTokenServiceCfg);
+  var logger = new Logger();
+  logger.debug = () => {};
 
-  tap.test('TokenService#parse', t => {
+  var rsaTokenServiceCfg = { mode: 'rsa', rsa: getTestKeyPair(), };
+  var rsaTokenService = new TokenService(logger, rsaTokenServiceCfg);
+  var hmacTokenServiceCfg = { mode: 'hmac', hmac: { secret: 'secret', } };
+  var hmacTokenService = new TokenService(logger, hmacTokenServiceCfg);
+
+  var clientInfo = {
+    clientId: 'abc',
+    expiresIn: 3600,
+  };
+
+  tap.test('TokenService#parse', async t => {
+    var token =
+      'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCIsImtpZCI6IjEifQ.eyJ1c2Vyb' +
+      'mFtZSI6ImFiYyIsImlhdCI6MTYyNjAzNzMxNywiYXVkIjoiYWJjIiwiaXNzI' +
+      'joiVG9rZW5TZXJ2aWNlIiwianRpIjoiMCJ9.riAfk377whnvndF_CT48PTgk' +
+      'QC3sdHP_VE47PdoyV3NQXAvi08uL0Kn6OCqYP8Rpljb0HFk-oe-JjCuwfdUW' +
+      'rQ';
+
+    var clientId = 'abc';
+    var userName = 'abc';
+    var payload = await hmacTokenService.parse(token, { clientId, });
+
+    //console.log(payload);
+    //console.log('TokenService#parse gave back', payload);
+
+    expect(payload).to.have.property('aud', clientId);
+    expect(payload).to.have.property('username', userName);
+
+    var keys = Object.keys(payload).sort();
+
+    expect(keys).to.eql([
+      'aud',
+      // 'exp',
+      'iat',
+      'iss',
+      'jti',
+      'username',
+    ]);
+
+    var wrongSecret = new TokenService(logger, {
+      ...hmacTokenService.config,
+      ...({
+        hmac: {
+          secret: 'different',
+        },
+      }),
+    });
+    t.rejects(async () => await wrongSecret.parse(token, clientInfo));
 
     t.end();
   });
 
   tap.test('TokenService#stringify', t => {
+    var payload = { username: 'abc' };
+
+    tap.test('works', async t => {
+      var token = await hmacTokenService.stringify(payload, clientInfo);
+      console.log('TokenService#stringify gave back', token);
+      t.ok(token);
+
+      t.end();
+    });
+
+    tap.test('jti??', async t => {
+      var twiceUsedService = new TokenService(logger, {
+        mode: 'hmac',
+        hmac: { secret: 'secret', }
+      });
+
+      var middle = t => Buffer.from(t.split('.')[1], 'base64').toString('utf8');
+      var decode = t => JSON.parse(middle(t));
+
+      var token = await twiceUsedService.stringify(payload, clientInfo);
+      expect(decode(token)).to.have.property('jti', '1');
+      token = await twiceUsedService.stringify(payload, clientInfo);
+      expect(decode(token)).to.have.property('jti', '2');
+
+      t.end();
+    });
+
+    tap.test('handle promise failure', t => {
+      t.rejects(async () => await hmacTokenService.stringify(null, clientInfo));
+
+      t.end();
+    });
+
     t.end();
   });
 
@@ -63,7 +141,7 @@ tap.test('TokenService.test.js', t => {
   });
 
   tap.test('TokenService::constructor', t => {
-    var ts = new TokenService(new Logger(), {
+    var ts = new TokenService(logger, {
       mode: 'hmac',
       hmac: {
         secret: 'secret',
