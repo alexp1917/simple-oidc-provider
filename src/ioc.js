@@ -18,15 +18,21 @@ module.exports.logger = new logging.Logger();
 
 module.exports.db = makeDb();
 
+module.exports.tokenService = new services.TokenService(
+  module.exports.logger,
+  module.exports.db,
+);
+
 module.exports.oAuth2Controller = new controllers.OAuth2Controller(
   module.exports.logger,
+  module.exports.tokenService,
   module.exports.db,
 );
 
 module.exports.app = makeApp(module.exports.logger, module.exports, config);
 
 module.exports.refresh = async function refresh() {
-  await makeDb.migrateLatest(module.exports.db);
+  setTimeout(() => makeDb.migrateLatest(module.exports.db));
 };
 
 module.exports.shutdown = async function shutdown() {

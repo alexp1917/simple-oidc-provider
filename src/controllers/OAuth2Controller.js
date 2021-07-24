@@ -1,8 +1,7 @@
-var jsonwebtoken = require('jsonwebtoken');
-
-function OAuth2Controller(logger, db, tokenService) {
+function OAuth2Controller(logger, tokenService, db) {
   this.logger = logger;
   this.db = db; // todo use tokenService
+  this.tokenService = tokenService;
 }
 
 OAuth2Controller.prototype.get = function(req, res, next) {
@@ -26,14 +25,25 @@ OAuth2Controller.prototype.token = async function(req, res, next) {
   // e.g. 'authorization_code',
   // e.g. 'http://localhost:5000/login/generic_oauth
 
-  var options = {
-    algorithm: 'RS512',
-  };
+  var token = await this.tokenService.token({
+    username: 'abc',
+    email: 'some@localhost',
+    name: 'ABC def',
+    // 'email:primary': 'some@example.localhost',
+  });
+  console.log(token)
 
   var url = new URL(redirect_uri);
-  url.searchParams.append('token', jsonwebtoken.sign(payload, 'secret', options, ))
-  res.redirect(url.toString());
+  url.searchParams.append('token', token);
+  // res.redirect(url.toString());
 
+  res.send({
+    access_token: token,
+    token_type: 'bearer',
+    expires_in: 3600,
+    refresh_token: undefined,
+    scope: 'grafana',
+  });
 };
 
 OAuth2Controller.prototype.authorize = async function(req, res, next) {
@@ -70,6 +80,16 @@ OAuth2Controller.prototype.authorize = async function(req, res, next) {
   // response_type=code
   // scope=grafana
   // state=7ds5PDHBmqIp-ZA0eOne9bFtHxkxDbXkF7h3sOuxx6Q=
+};
+
+OAuth2Controller.prototype.grafanaInfo = async function(req, res, next) {
+  var token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+  console.log('token', token);
+
+  var payload = await this.tokenService.verifyToken(token);
+  console.log('payload', payload);
+
+  res.send(payload);
 };
 
 module.exports = OAuth2Controller;

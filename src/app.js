@@ -43,6 +43,7 @@ function makeApp(logger, controllers, config) {
   app.get(baseUrl + '/authorize', (r, s, n) => oAuth2Controller.authorize(r, s, n));
   app.get(baseUrl + '/oauth2', (r, s, n) => oAuth2Controller.get(r, s, n));
   app.use(baseUrl + '/oauth2/token', (r, s, n) => oAuth2Controller.token(r, s, n));
+  app.use(baseUrl + '/oauth2/api', (r, s, n) => oAuth2Controller.grafanaInfo(r, s, n));
 
   app.use((req, res, next) => {
 
@@ -51,6 +52,7 @@ function makeApp(logger, controllers, config) {
     logger.log(req.method);
     logger.log(req.query);
     logger.log(req.body);
+    logger.log(req.headers);
     next();
   });
 
